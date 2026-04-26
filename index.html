@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>打字训练营</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;}
+:root{
+  --bg:#0d0d14;--card:#161622;--accent:#6c63ff;--accent2:#ff4757;
+  --green:#2ed573;--yellow:#ffa502;--text:#e0e0ee;--dim:#555570;
+  --key-bg:#1e1e30;--key-face:#252540;--key-border:#333350;
+  --key-text:#c8c8dd;--shadow:#0a0a14;
+}
+html,body{height:100%;font-family:'SF Pro','Segoe UI','Helvetica Neue',sans-serif;background:var(--bg);color:var(--text);}
+body{display:flex;flex-direction:column;overflow:hidden;height:100dvh;}
+
+/* ── Header ── */
+.header{padding:8px 14px;background:var(--card);border-bottom:1px solid #222;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;z-index:10;}
+.header h1{font-size:16px;background:linear-gradient(135deg,var(--accent),#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-weight:800;}
+.tabs{display:flex;gap:3px;}
+.tab{padding:5px 12px;border-radius:18px;border:1.5px solid #333;background:transparent;color:var(--dim);font-size:12px;cursor:pointer;transition:.2s;font-weight:600;}
+.tab.on{background:var(--accent);border-color:var(--accent);color:#fff;}
+
+/* ── Content ── */
+.content{flex:1;display:flex;flex-direction:column;align-items:center;padding:6px 10px;gap:6px;overflow-y:auto;min-height:0;}
+
+/* ── Level Select ── */
+#levelScreen{width:100%;max-width:700px;}
+#levelScreen h2{text-align:center;font-size:14px;color:var(--dim);margin-bottom:8px;font-weight:500;}
+.lv-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:6px;}
+.lv-card{background:var(--card);border:1.5px solid var(--key-border);border-radius:12px;padding:14px 6px;text-align:center;cursor:pointer;transition:.2s;}
+.lv-card:hover{border-color:var(--accent);transform:translateY(-2px);}
+.lv-card .icon{font-size:26px;}
+.lv-card .name{font-size:11px;color:var(--dim);margin-top:5px;}
+
+/* ── Stats ── */
+.stats{display:flex;gap:5px;width:100%;max-width:700px;}
+.st{background:var(--card);border:1px solid #222;border-radius:10px;padding:5px 8px;flex:1;text-align:center;}
+.st .v{font-size:18px;font-weight:700;color:var(--accent);}
+.st .l{font-size:9px;color:var(--dim);margin-top:1px;}
+
+/* ── Text Area ── */
+.textBox{background:var(--card);border:1px solid #222;border-radius:12px;padding:12px 14px;width:100%;max-width:700px;font-size:22px;line-height:2;letter-spacing:1.5px;min-height:70px;word-break:break-all;}
+.ch{display:inline;border-radius:3px;padding:1px 1px;transition:color .08s;}
+.ch.ok{color:var(--green);}
+.ch.bad{color:var(--accent2);background:rgba(255,71,87,.12);}
+.ch.cur{background:var(--accent);color:#fff;border-radius:3px;}
+.ch.wt{color:var(--dim);}
+/* Pinyin display */
+.py-char{font-size:28px;display:block;text-align:center;margin:4px 0;color:var(--yellow);font-weight:700;}
+.py-pinyin{font-size:16px;color:var(--dim);text-align:center;margin-bottom:6px;}
+.py-input{display:flex;justify-content:center;gap:3px;flex-wrap:wrap;}
+.py-letter{width:28px;height:36px;border:2px solid var(--key-border);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;background:var(--key-face);transition:.15s;}
+.py-letter.filled{border-color:var(--accent);color:var(--accent);}
+.py-letter.current{border-color:var(--accent);animation:pyPulse 1s infinite;}
+.py-letter.correct{border-color:var(--green);color:var(--green);background:rgba(46,213,115,.1);}
+.py-letter.wrong{border-color:var(--accent2);color:var(--accent2);background:rgba(255,71,87,.1);}
+@keyframes pyPulse{0%,100%{opacity:1}50%{opacity:.5}}
+
+/* ── Buttons ── */
+.btns{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;}
+.btn{padding:8px 18px;border-radius:10px;border:none;font-size:12px;font-weight:700;cursor:pointer;transition:.15s;}
+.btn-p{background:var(--accent);color:#fff;}
+.btn-h{background:var(--yellow);color:#1a1a2e;}
+.btn-r{background:var(--accent2);color:#fff;}
+
+/* ── Help Panel ── */
+.help{background:var(--card);border:1.5px solid var(--accent);border-radius:12px;padding:14px;width:100%;max-width:700px;display:none;animation:sl .25s;}
+.help.show{display:block;}
+@keyframes sl{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}
+.help h3{color:var(--accent);margin-bottom:6px;font-size:13px;}
+.help .hint{font-size:13px;line-height:1.9;color:var(--text);}
+.help .hint b{color:var(--yellow);}
+
+/* ── Overlay ── */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:100;display:none;align-items:center;justify-content:center;padding:16px;}
+.overlay.show{display:flex;}
+.o-card{background:var(--card);border-radius:16px;padding:24px;max-width:440px;width:100%;text-align:center;border:1px solid #333;}
+.o-card h2{color:var(--accent);margin-bottom:8px;}
+.o-card p{color:var(--dim);line-height:1.7;margin-bottom:8px;font-size:13px;}
+.o-card .big{font-size:40px;font-weight:700;color:var(--accent);margin:6px 0;letter-spacing:6px;}
+.o-card .fl{font-size:14px;color:var(--yellow);margin:4px 0;}
+.done{text-align:center;padding:16px;}
+.done .emoji{font-size:48px;}
+.done h2{color:var(--green);margin:6px 0;}
+.done p{color:var(--dim);font-size:12px;line-height:1.7;}
+
+/* ── Heatmap ── */
+.heatmap{background:var(--card);border:1px solid #222;border-radius:12px;padding:12px;width:100%;max-width:700px;}
+.heatmap h3{color:var(--accent);font-size:13px;margin-bottom:8px;text-align:center;}
+.hm-grid{display:flex;flex-wrap:wrap;gap:3px;justify-content:center;}
+.hm-key{width:36px;height:36px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:#fff;position:relative;}
+.hm-key .hm-rate{font-size:8px;position:absolute;bottom:1px;opacity:.7;}
+
+/* ── Progress Chart ── */
+.chart-wrap{background:var(--card);border:1px solid #222;border-radius:12px;padding:12px;width:100%;max-width:700px;}
+.chart-wrap h3{color:var(--accent);font-size:13px;margin-bottom:8px;text-align:center;}
+canvas{width:100%;height:120px;border-radius:8px;}
+
+/* ══════════════════════════════════════
+   KEYBOARD
+   ══════════════════════════════════════ */
+.kb-wrap{flex-shrink:0;background:#111120;padding:6px 4px 8px;border-top:1px solid #222;}
+.kb{max-width:740px;margin:0 auto;}
+.kb-row{display:flex;gap:3px;margin-bottom:3px;justify-content:center;}
+.k{background:var(--key-face);border:1px solid var(--key-border);border-bottom:3px solid #1a1a2e;border-radius:5px;color:var(--key-text);font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .06s;height:40px;position:relative;}
+.k:active,.k.hit{background:var(--accent);color:#fff;border-bottom:1px solid var(--accent);transform:translateY(2px);}
+.k.ok-k{background:rgba(46,213,115,.15);border-color:var(--green);color:var(--green);}
+.k.bad-k{background:rgba(255,71,87,.15);border-color:var(--accent2);color:var(--accent2);}
+.k.hint-k{animation:glow .8s infinite alternate;box-shadow:0 0 12px rgba(108,99,255,.6);}
+@keyframes glow{from{box-shadow:0 0 6px rgba(108,99,255,.3)}to{box-shadow:0 0 18px rgba(108,99,255,.9)}}
+.k .sub{font-size:8px;color:var(--dim);position:absolute;top:2px;left:4px;font-weight:400;}
+.k-1u{width:44px;}.k-1_5{width:66px;}.k-1_75{width:77px;}
+.k-2u{width:92px;}.k-2_25{width:99px;}.k-2_75{width:121px;}.k-space{width:264px;}
+
+/* ── Finger Guide above keyboard ── */
+.finger-bar{display:flex;justify-content:center;gap:2px;padding:0 4px 4px;max-width:740px;margin:0 auto;}
+.fg{width:12px;height:12px;border-radius:50%;border:1px solid rgba(255,255,255,.15);}
+
+/* ── Responsive ── */
+@media(max-width:750px){
+  .k{height:38px;font-size:11px;}
+  .k-1u{width:calc((100vw - 20px)/15);}
+  .k-1_5{width:calc((100vw - 20px)/15*1.5);}
+  .k-1_75{width:calc((100vw - 20px)/15*1.75);}
+  .k-2u{width:calc((100vw - 20px)/15*2);}
+  .k-2_25{width:calc((100vw - 20px)/15*2.25);}
+  .k-2_75{width:calc((100vw - 20px)/15*2.75);}
+  .k-space{width:calc((100vw - 20px)/15*6);}
+  .kb{max-width:100vw;}
+  .textBox{font-size:18px;padding:10px 10px;}
+}
+@media(max-width:400px){
+  .k{height:34px;font-size:10px;}
+  .stats{gap:3px;}.st{padding:3px 4px;}.st .v{font-size:15px;}
+}
+
+/* ── Landscape ── */
+@media(orientation:landscape) and (max-height:500px){
+  body{flex-direction:row;}
+  .header{writing-mode:vertical-rl;padding:6px 4px;border-bottom:none;border-right:1px solid #222;width:auto;}
+  .header h1{font-size:13px;}
+  .tabs{flex-direction:column;gap:4px;margin-top:8px;}
+  .tab{padding:4px 6px;font-size:10px;}
+  .content{flex:1;padding:4px 6px;gap:4px;overflow-y:auto;}
+  .textBox{font-size:16px;padding:8px;min-height:50px;}
+  .kb-wrap{padding:4px;width:60%;max-width:none;}
+  .k{height:34px;font-size:10px;}
+  .k-1u{width:36px;}.k-1_5{width:54px;}.k-1_75{width:63px;}
+  .k-2u{width:72px;}.k-2_25{width:81px;}.k-2_75{width:99px;}.k-space{width:210px;}
+  .stats{gap:3px;}
+  .st{padding:3px 4px;}.st .v{font-size:14px;}
+  .st .l{font-size:8px;}
+  .py-char{font-size:22px;}
+  .py-letter{width:24px;height:30px;font-size:15px;}
+  .help,.heatmap,.chart-wrap{display:none !important;}
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>⌨️ 打字训练营</h1>
+  <div class="tabs">
+    <button class="tab on" onclick="switchTab('teach',this)">📖 教学</button>
+    <button class="tab" onclick="switchTab('challenge',this)">🏆 挑战</button>
+    <button class="tab" onclick="switchTab('pinyin',this)">🀄 拼音</button>
+    <button class="tab" onclick="switchTab('stats',this)">📊 统计</button>
+  </div>
+</div>
+
+<div class="content" id="content">
+  <div id="levelScreen"></div>
+  <div class="stats" id="statsBar" style="display:none">
+    <div class="st"><div class="v" id="sv">0</div><div class="l">字/分钟</div></div>
+    <div class="st"><div class="v" id="av">100%</div><div class="l">正确率</div></div>
+    <div class="st"><div class="v" id="cv">0</div><div class="l">连击</div></div>
+    <div class="st"><div class="v" id="scv">0</div><div class="l">得分</div></div>
+  </div>
+  <div class="textBox" id="textBox" style="display:none"></div>
+  <div class="help" id="helpPanel"><h3>💡 打字提示</h3><div class="hint" id="helpHint"></div></div>
+  <div class="btns" id="btns" style="display:none">
+    <button class="btn btn-r" onclick="resetLv()">🔄 重新开始</button>
+    <button class="btn btn-h" id="helpBtn" onclick="doHelp()">🆘 求助</button>
+  </div>
+  <!-- Stats screen content -->
+  <div id="statsScreen" style="display:none;width:100%;max-width:700px;">
+    <div class="chart-wrap"><h3>📈 速度进步曲线</h3><canvas id="chartCanvas" height="120"></canvas></div>
+    <div style="height:8px"></div>
+    <div class="heatmap"><h3>🔥 错误热力图</h3><div class="hm-grid" id="hmGrid"></div></div>
+  </div>
+</div>
+
+<!-- Finger guide -->
+<div class="finger-bar" id="fingerBar"></div>
+
+<!-- Keyboard -->
+<div class="kb-wrap">
+  <div class="kb" id="kb"></div>
+</div>
+
+<!-- Overlays -->
+<div class="overlay" id="teachOv">
+  <div class="o-card">
+    <h2 id="teachTitle"></h2>
+    <p id="teachDesc"></p>
+    <div class="big" id="teachChars"></div>
+    <div class="fl" id="teachFinger"></div>
+    <div style="margin-top:14px"><button class="btn btn-p" onclick="closeTeach()">我明白了！</button></div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════
+// SOUND (Web Audio API)
+// ═══════════════════════════════════════════
+let audioCtx = null;
+function getAudio(){ if(!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)(); return audioCtx; }
+
+function playCorrect(){
+  try{
+    const c=getAudio(), o=c.createOscillator(), g=c.createGain();
+    o.connect(g); g.connect(c.destination);
+    o.frequency.value=880; o.type='sine';
+    g.gain.setValueAtTime(0.08,c.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+0.12);
+    o.start(c.currentTime); o.stop(c.currentTime+0.12);
+  }catch(e){}
+}
+function playWrong(){
+  try{
+    const c=getAudio(), o=c.createOscillator(), g=c.createGain();
+    o.connect(g); g.connect(c.destination);
+    o.frequency.value=220; o.type='square';
+    g.gain.setValueAtTime(0.06,c.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+0.2);
+    o.start(c.currentTime); o.stop(c.currentTime+0.2);
+  }catch(e){}
+}
+function playDone(){
+  try{
+    const c=getAudio();
+    [523,659,784].forEach((f,i)=>{
+      const o=c.createOscillator(),g=c.createGain();
+      o.connect(g);g.connect(c.destination);
+      o.frequency.value=f;o.type='sine';
+      const t=c.currentTime+i*0.12;
+      g.gain.setValueAtTime(0.08,t);
+      g.gain.exponentialRampToValueAtTime(0.001,t+0.2);
+      o.start(t);o.stop(t+0.2);
+    });
+  }catch(e){}
+}
+
+function vibrate(ms){ try{ if(navigator.vibrate) navigator.vibrate(ms); }catch(e){} }
+
+// ═══════════════════════════════════════════
+// ERROR TRACKING & HISTORY
+// ═══════════════════════════════════════════
+let keyErrors = {}; // {key: {total, wrong}}
+let history = [];   // [{date, wpm, acc, score}]
+try {
+  keyErrors = JSON.parse(localStorage.getItem('tp-err')||'{}');
+  history = JSON.parse(localStorage.getItem('tp-hist')||'[]');
+} catch(e){}
+
+function recordError(key){
+  const k = key.toLowerCase();
+  if(!keyErrors[k]) keyErrors[k]={total:0,wrong:0};
+  keyErrors[k].total++;
+  keyErrors[k].wrong++;
+  localStorage.setItem('tp-err',JSON.stringify(keyErrors));
+}
+function recordCorrect(key){
+  const k = key.toLowerCase();
+  if(!keyErrors[k]) keyErrors[k]={total:0,wrong:0};
+  keyErrors[k].total++;
+  localStorage.setItem('tp-err',JSON.stringify(keyErrors));
+}
+function saveHistory(wpm,acc,score){
+  const today = new Date().toLocaleDateString('zh-CN');
+  history.push({date:today,wpm,acc,score,ts:Date.now()});
+  if(history.length>200) history=history.slice(-200);
+  localStorage.setItem('tp-hist',JSON.stringify(history));
+}
+
+// ═══════════════════════════════════════════
+// WORD POOLS
+// ═══════════════════════════════════════════
+const WE = ['the','and','for','are','but','not','you','all','can','had','her','was','one','our','out','day','get','has','him','his','how','its','may','new','now','old','see','way','who','did','boy','big','let','say','she','too','use','ask','run','men','keep','work','long','make','name','come','just','over','such','take','year','them','some','time','very','when','much','know','back','give','most','find'];
+const WM = ['about','after','again','begin','below','bring','build','carry','clean','close','cover','cross','dance','drink','drive','early','earth','eight','every','field','final','first','floor','found','front','garden','great','green','happy','heart','heavy','house','laugh','learn','leave','light','money','morning','music','night','north','ocean','offer','often','order','paper','party','place','plant','point','power','press','price','push','quick','quiet','raise','reach','ready','river','round','serve','seven','share','short','since','sleep','small','smile','sound','south','speak','start','still','stone','stop','store','story','study','sugar','table','teach','thank','think','today','total','under','until','visit','voice','watch','water','white','whole','woman','world','write','young'];
+const WH = ['ability','absence','achieve','acquire','address','advance','already','ancient','balance','because','believe','beneath','between','billion','brother','capture','careful','central','century','certain','chamber','chapter','charity','chicken','climate','collect','college','comfort','command','common','company','compare','complex','concern','conduct','confirm','connect','contain','control','correct','council','country','courage','current','daughter','declare','decline','default','defense','deliver','density','deposit','develop','devoted','digital','display','distant','diverse','economy','edition','educate','element','embrace','emotion','endless','enforce','enhance','essence','examine','example','excited','exhibit','expense','explain','explore','express','extreme','fiction','finally','finding','foreign','forever','formula','fortune','forward','freedom','further','gallery','gateway','general','genuine','growing','habitat','halfway','healthy','highway','history','holiday','housing','however','imagine','improve','include','initial','inspire','install','instead','journal','justice','kitchen','kingdom','landing','largely','lasting','leading','lecture','library','limited','machine','manager','massive','measure','medical','mention','message','mineral','miracle','mission','mixture','monitor','mystery','natural','neither','network','notable','nothing','nuclear','observe','obvious','offense','operate','opinion','organic','outline','overall','package','parking','partner','passage','pattern','penalty','percent','perfect','perhaps','picture','plastic','popular','portion','poverty','prepare','present','primary','printer','private','problem','produce','program','project','promise','promote','protect','provide','publish','purpose','quality','quarter','quickly','reality','realize','receipt','recover','reflect','regular','related','release','remains','removal','replace','request','require','reserve','resolve','respect','respond','restore','revenue','routine','satisfy','scholar','science','section','serious','service','session','setting','shelter','silence','similar','society','soldier','somehow','speaker','special','station','storage','strange','student','subject','success','suggest','support','supreme','surface','survive','suspect','sustain','teacher','tension','terminal','therapy','thought','through','tonight','towards','traffic','trouble','turning','typical','unknown','upgrade','utility','variety','vehicle','venture','version','veteran','victory','village','violent','visible','welfare','western','whether','willing','witness'];
+const SENT = ['the quick brown fox jumps over the lazy dog','pack my box with five dozen liquor jugs','how vexingly quick daft zebras jump','the five boxing wizards jump quickly','sphinx of black quartz judge my vow','two driven jocks help fax my big quiz','jackdaws love my big sphinx of quartz','the job requires extra pluck and zeal from young wage earners'];
+
+// ═══════════════════════════════════════════
+// PINYIN DATA
+// ═══════════════════════════════════════════
+const PY_DATA = [
+  // 单字
+  {ch:'你',py:'ni'},{ch:'好',py:'hao'},{ch:'我',py:'wo'},{ch:'他',py:'ta'},{ch:'她',py:'ta'},
+  {ch:'是',py:'shi'},{ch:'不',py:'bu'},{ch:'了',py:'le'},{ch:'在',py:'zai'},{ch:'有',py:'you'},
+  {ch:'这',py:'zhe'},{ch:'那',py:'na'},{ch:'什么',py:'shenme'},{ch:'谁',py:'shui'},{ch:'哪',py:'na'},
+  {ch:'人',py:'ren'},{ch:'大',py:'da'},{ch:'小',py:'xiao'},{ch:'多',py:'duo'},{ch:'少',py:'shao'},
+  {ch:'上',py:'shang'},{ch:'下',py:'xia'},{ch:'左',py:'zuo'},{ch:'右',py:'you'},{ch:'中',py:'zhong'},
+  {ch:'天',py:'tian'},{ch:'地',py:'di'},{ch:'水',py:'shui'},{ch:'火',py:'huo'},{ch:'山',py:'shan'},
+  {ch:'日',py:'ri'},{ch:'月',py:'yue'},{ch:'星',py:'xing'},{ch:'风',py:'feng'},{ch:'云',py:'yun'},
+  {ch:'花',py:'hua'},{ch:'草',py:'cao'},{ch:'树',py:'shu'},{ch:'鸟',py:'niao'},{ch:'鱼',py:'yu'},
+  {ch:'吃',py:'chi'},{ch:'喝',py:'he'},{ch:'看',py:'kan'},{ch:'听',py:'ting'},{ch:'说',py:'shuo'},
+  {ch:'走',py:'zou'},{ch:'跑',py:'pao'},{ch:'坐',py:'zuo'},{ch:'站',py:'zhan'},{ch:'睡',py:'shui'},
+  {ch:'来',py:'lai'},{ch:'去',py:'qu'},{ch:'开',py:'kai'},{ch:'关',py:'guan'},{ch:'买',py:'mai'},
+  {ch:'卖',py:'mai'},{ch:'学',py:'xue'},{ch:'教',py:'jiao'},{ch:'写',py:'xie'},{ch:'读',py:'du'},
+  {ch:'书',py:'shu'},{ch:'电脑',py:'diannao'},{ch:'手机',py:'shouji'},{ch:'电话',py:'dianhua'},
+  {ch:'朋友',py:'pengyou'},{ch:'老师',py:'laoshi'},{ch:'学生',py:'xuesheng'},
+  {ch:'爸爸',py:'baba'},{ch:'妈妈',py:'mama'},{ch:'哥哥',py:'gege'},{ch:'姐姐',py:'jiejie'},
+  {ch:'弟弟',py:'didi'},{ch:'妹妹',py:'meimei'},{ch:'爷爷',py:'yeye'},{ch:'奶奶',py:'nainai'},
+  {ch:'今天',py:'jintian'},{ch:'明天',py:'mingtian'},{ch:'昨天',py:'zuotian'},
+  {ch:'早上',py:'zaoshang'},{ch:'中午',py:'zhongwu'},{ch:'晚上',py:'wanshang'},
+  {ch:'吃饭',py:'chifan'},{ch:'睡觉',py:'shuijiao'},{ch:'工作',py:'gongzuo'},
+  {ch:'学习',py:'xuexi'},{ch:'玩耍',py:'wanshua'},{ch:'跑步',py:'paobu'},
+  {ch:'游泳',py:'youyong'},{ch:'唱歌',py:'changge'},{ch:'跳舞',py:'tiaowu'},
+  {ch:'漂亮',py:'piaoliang'},{ch:'开心',py:'kaixin'},{ch:'难过',py:'nanguo'},
+  {ch:'谢谢',py:'xiexie'},{ch:'再见',py:'zaijian'},{ch:'你好',py:'nihao'},
+  {ch:'对不起',py:'duibuqi'},{ch:'没关系',py:'meiguanxi'},
+  {ch:'中国',py:'zhongguo'},{ch:'北京',py:'beijing'},{ch:'上海',py:'shanghai'},
+  {ch:'广州',py:'guangzhou'},{ch:'深圳',py:'shenzhen'},
+  {ch:'春天',py:'chuntian'},{ch:'夏天',py:'xiatian'},{ch:'秋天',py:'qiutian'},{ch:'冬天',py:'dongtian'},
+  {ch:'红色',py:'hongse'},{ch:'蓝色',py:'lanse'},{ch:'绿色',py:'lvse'},{ch:'白色',py:'baise'},
+  {ch:'黑色',py:'heise'},{ch:'黄色',py:'huangse'},
+  // 词组
+  {ch:'你好吗',py:'nihao ma'},{ch:'谢谢',py:'xiexie'},{ch:'再见',py:'zaijian'},
+  {ch:'请问',py:'qingwen'},{ch:'不好意思',py:'buhaoyisi'},
+  {ch:'吃饭了吗',py:'chifan le ma'},{ch:'早上好',py:'zaoshang hao'},
+  {ch:'晚上好',py:'wanshang hao'},{ch:'新年好',py:'xinnian hao'},
+  {ch:'生日快乐',py:'shengri kuaile'},
+  {ch:'打电话',py:'da dianhua'},{ch:'买东西',py:'maidongxi'},
+  {ch:'去学校',py:'qu xuexiao'},{ch:'回家',py:'hui jia'},
+  {ch:'下雨了',py:'xia yu le'},{ch:'天气好',py:'tianqi hao'},
+];
+
+// Teaching lessons
+const TEACH = [
+  {id:0,name:'基准键位',desc:'左手小指到食指放ASDF，右手食指到小指放JKL分号。F和J上有凸起，摸到它们。',text:'asdf jkl; asdfjkl; fjdksla; ;alskdjf fj dk sla',fingers:{a:'左小指',s:'左无名指',d:'左中指',f:'左食指',j:'右食指',k:'右中指',l:'右无名指',';':'右小指'}},
+  {id:1,name:'上排键',desc:'手指从基准键向上伸。Q左小指，W左无名，E左中，R/T左食指；Y/U右食指，I右中，O右无名，P右小指。',text:'qwert yuiop qwerty rtyu erwt yuiopq pwoeiur',fingers:{q:'左小指',w:'左无名指',e:'左中指',r:'左食指',t:'左食指',y:'右食指',u:'右食指',i:'右中指',o:'右无名指',p:'右小指'}},
+  {id:2,name:'下排键',desc:'手指从基准键向下弯。Z左小指，X左无名，C左中，V/B左食指；N/M右食指，逗号右中，句号右无名，斜杠右小指。',text:'zxcvb nm,./ zxcvbnm xcvbnm ,. /mnbvcx',fingers:{z:'左小指',x:'左无名指',c:'左中指',v:'左食指',b:'左食指',n:'右食指',m:'右食指',',':'右中指','.':'右无名指','/':'右小指'}},
+  {id:3,name:'数字行',desc:'数字行在最上面。1左小指，2左无名，3左中，4/5左食指；6/7右食指，8右中，9右无名，0右小指。',text:'12345 67890 1928 3746 5083 4629 175038',fingers:{'1':'左小指','2':'左无名指','3':'左中指','4':'左食指','5':'左食指','6':'右食指','7':'右食指','8':'右中指','9':'右无名指','0':'右小指'}},
+  {id:4,name:'Shift大小写',desc:'打大写字母时，用另一只手的小指按Shift。比如打大写A，右手小指按右Shift，左手小指打A。',text:'Hello World This Is A Test Apple Banana Cat Dog',fingers:{'Shift':'与打字相反的小指'}},
+  {id:5,name:'常用标点',desc:'逗号右中指，句号右无名指，问号右小指加Shift，感叹号左小指加Shift。',text:'hello, how are you? i am fine! it is great. ok; yes',fingers:{',':'右中指','.':'右无名指','/':'右小指',';':'右小指'}},
+];
+
+// ═══════════════════════════════════════════
+// KEYBOARD LAYOUT
+// ═══════════════════════════════════════════
+const KB_ROWS = [
+  [['`','~','1u'],['1','!','1u'],['2','@','1u'],['3','#','1u'],['4','$','1u'],['5','%','1u'],['6','^','1u'],['7','&','1u'],['8','*','1u'],['9','(','1u'],['0',')','1u'],['-','_','1u'],['=','+','1u'],['Backspace',null,'2u']],
+  [['Tab',null,'1_5'],['q',null,'1u'],['w',null,'1u'],['e',null,'1u'],['r',null,'1u'],['t',null,'1u'],['y',null,'1u'],['u',null,'1u'],['i',null,'1u'],['o',null,'1u'],['p',null,'1u'],['[','{','1u'],[']','}','1u'],['\\','|','1_5']],
+  [['CapsLock',null,'1_75'],['a',null,'1u'],['s',null,'1u'],['d',null,'1u'],['f',null,'1u'],['g',null,'1u'],['h',null,'1u'],['j',null,'1u'],['k',null,'1u'],['l',null,'1u'],[';',':','1u'],["'",'"','1u'],['Enter',null,'2_25']],
+  [['Shift',null,'2_75'],['z',null,'1u'],['x',null,'1u'],['c',null,'1u'],['v',null,'1u'],['b',null,'1u'],['n',null,'1u'],['m',null,'1u'],[',','<','1u'],['.','>','1u'],['/','?','1u'],['Shift',null,'2_75']],
+  [['Ctrl',null,'1_5'],['Alt',null,'1_5'],[' ','','space'],['Alt',null,'1_5'],['Ctrl',null,'1_5']],
+];
+
+const FC={'左小指':'#e74c3c','左无名指':'#e67e22','左中指':'#f1c40f','左食指':'#2ecc71','右食指':'#3498db','右中指':'#9b59b6','右无名指':'#e91e63','右小指':'#00bcd4','拇指':'#888'};
+const KF={'`':'左小指','1':'左小指','2':'左无名指','3':'左中指','4':'左食指','5':'左食指','6':'右食指','7':'右食指','8':'右中指','9':'右无名指','0':'右小指','-':'右小指','=':'右小指','q':'左小指','w':'左无名指','e':'左中指','r':'左食指','t':'左食指','y':'右食指','u':'右食指','i':'右中指','o':'右无名指','p':'右小指','[':'右小指',']':'右小指','\\':'右小指','a':'左小指','s':'左无名指','d':'左中指','f':'左食指','g':'左食指','h':'右食指','j':'右食指','k':'右中指','l':'右无名指',';':'右小指',"'":'右小指','z':'左小指','x':'左无名指','c':'左中指','v':'左食指','b':'左食指','n':'右食指','m':'右食指',',':'右中指','.':'右无名指','/':'右小指',' ':'拇指'};
+
+// ═══════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════
+let mode='teach',lvl=null,text='',idx=0,ok=0,bad=0,combo=0,maxC=0,score=0,t0=null,helpOpen=false;
+let completed={},taught={};
+try{completed=JSON.parse(localStorage.getItem('tp-c')||'{}');taught=JSON.parse(localStorage.getItem('tp-t')||'{}');}catch(e){}
+
+// Pinyin state
+let pyList=[],pyIdx=0,pyChar='',pyTarget='',pyTyped='',pyCorrect=0,pyWrong=0;
+
+// ═══════════════════════════════════════════
+// BUILD KEYBOARD
+// ═══════════════════════════════════════════
+function buildKB(){
+  const el=document.getElementById('kb'); el.innerHTML='';
+  KB_ROWS.forEach(row=>{
+    const rd=document.createElement('div'); rd.className='kb-row';
+    row.forEach(item=>{
+      if(typeof item==='string') item=[item,'"','1u'];
+      const[main,sub,w]=item;
+      const k=document.createElement('div');
+      k.className='k k-'+(w==='space'?'space':w.replace('.','_'));
+      k.dataset.k=main.toLowerCase();
+      if(main===' ') k.innerHTML='';
+      else if(sub&&main!=='Backspace'&&main!=='Tab'&&main!=='CapsLock'&&main!=='Enter'&&main!=='Shift'&&main!=='Ctrl'&&main!=='Alt')
+        k.innerHTML=`<span class="sub">${sub}</span>${main.toUpperCase()}`;
+      else k.textContent=main;
+      k.addEventListener('pointerdown',e=>{e.preventDefault();pressKey(main);});
+      rd.appendChild(k);
+    });
+    el.appendChild(rd);
+  });
+  // Finger bar
+  buildFingerBar();
+}
+
+function buildFingerBar(){
+  const bar=document.getElementById('fingerBar'); bar.innerHTML='';
+  const order=['左小指','左无名指','左中指','左食指','左食指','右食指','右食指','右中指','右无名指','右小指'];
+  order.forEach(f=>{
+    const d=document.createElement('div'); d.className='fg'; d.style.background=FC[f]||'#555'; d.title=f;
+    bar.appendChild(d);
+  });
+}
+
+function hlKey(k,cls){
+  document.querySelectorAll('.k').forEach(el=>{el.classList.remove('hit','ok-k','bad-k','hint-k');if(el.dataset.k===k)el.classList.add(cls);});
+}
+function clearHL(){document.querySelectorAll('.k').forEach(el=>el.classList.remove('hit','ok-k','bad-k','hint-k'));}
+
+// ═══════════════════════════════════════════
+// LEVEL SCREEN
+// ═══════════════════════════════════════════
+function showLevels(){
+  document.getElementById('statsBar').style.display='none';
+  document.getElementById('textBox').style.display='none';
+  document.getElementById('btns').style.display='none';
+  document.getElementById('helpPanel').classList.remove('show');
+  document.getElementById('statsScreen').style.display='none';
+  const sc=document.getElementById('levelScreen'); sc.style.display='';
+  if(mode==='teach'){
+    let h='<h2>📖 教学关卡 — 从零开始学打字</h2><div class="lv-grid">';
+    TEACH.forEach(l=>{h+=`<div class="lv-card" onclick="startTeach(${l.id})"><div class="icon">${completed[l.id]?'✅':'📘'}</div><div class="name">${l.name}</div></div>`;});
+    sc.innerHTML=h+'</div>';
+  } else if(mode==='challenge'){
+    let h='<h2>🏆 挑战关卡 — 每次随机生成内容</h2><div class="lv-grid">';
+    [{id:100,name:'简单单词',g:()=>pick(WE,12).join(' ')},{id:101,name:'进阶单词',g:()=>pick(WM,10).join(' ')},{id:102,name:'长难单词',g:()=>pick(WH,8).join(' ')},{id:103,name:'随机句子',g:()=>pick(SENT,2).join(' ')},{id:104,name:'混合乱打',g:()=>{const t=[()=>pick(WE,5).join(' '),()=>pick(WM,4).join(' '),()=>pick(WH,3).join(' '),()=>pick(SENT,1)[0]];return shuffle(t).map(f=>f()).join(' ');}},{id:105,name:'数字+符号',g:()=>{const n=Array.from({length:8},()=>Math.floor(Math.random()*900+100)).join(' ');const s=pick(['!','@','#','$','%','&','*','(',')','-','_','=','+'],6).join(' ');return n+' '+s+' '+pick(WE,4).join(' ');}}].forEach(c=>{
+      h+=`<div class="lv-card" onclick="startChallenge(${c.id})"><div class="icon">🎯</div><div class="name">${c.name}</div></div>`;
+    });
+    sc.innerHTML=h+'</div>';
+  } else if(mode==='pinyin'){
+    let h='<h2>🀄 拼音打字 — 看汉字打拼音</h2><div class="lv-grid">';
+    [{id:200,name:'常用单字',g:()=>shuffle(PY_DATA.filter(d=>d.ch.length===1)).slice(0,15)},{id:201,name:'常用词语',g:()=>shuffle(PY_DATA.filter(d=>d.ch.length>=2)).slice(0,12)},{id:202,name:'混合练习',g:()=>shuffle(PY_DATA).slice(0,15)}].forEach(c=>{
+      h+=`<div class="lv-card" onclick="startPinyin(${c.id})"><div class="icon">🀄</div><div class="name">${c.name}</div></div>`;
+    });
+    sc.innerHTML=h+'</div>';
+  } else if(mode==='stats'){
+    sc.style.display='none';
+    document.getElementById('statsScreen').style.display='';
+    drawChart();
+    drawHeatmap();
+  }
+}
+
+// ═══════════════════════════════════════════
+// PICK / SHUFFLE
+// ═══════════════════════════════════════════
+function pick(arr,n){const s=[];for(let i=0;i<n;i++)s.push(arr[Math.floor(Math.random()*arr.length)]);return s;}
+function shuffle(arr){const a=[...arr];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+
+// ═══════════════════════════════════════════
+// START TEACH / CHALLENGE
+// ═══════════════════════════════════════════
+function startTeach(id){
+  const l=TEACH[id]; lvl={id:l.id,mode:'teach',fingers:l.fingers||{}}; text=l.text; beginRound();
+  if(!taught[id]){taught[id]=1;localStorage.setItem('tp-t',JSON.stringify(taught));showTeachOv(l.name,l.desc,l.text,l.fingers);}
+}
+const CHAL_GEN={};
+[100,101,102,103,104,105].forEach(id=>{
+  const gens={100:()=>pick(WE,12).join(' '),101:()=>pick(WM,10).join(' '),102:()=>pick(WH,8).join(' '),103:()=>pick(SENT,2).join(' '),104:()=>{const t=[()=>pick(WE,5).join(' '),()=>pick(WM,4).join(' '),()=>pick(WH,3).join(' '),()=>pick(SENT,1)[0]];return shuffle(t).map(f=>f()).join(' ');},105:()=>{const n=Array.from({length:8},()=>Math.floor(Math.random()*900+100)).join(' ');const s=pick(['!','@','#','$','%','&','*','(',')','-','_','=','+'],6).join(' ');return n+' '+s+' '+pick(WE,4).join(' ');}};
+  CHAL_GEN[id]=gens[id];
+});
+function startChallenge(id){lvl={id,mode:'challenge',fingers:{}};text=CHAL_GEN[id]();beginRound();}
+
+function beginRound(){
+  idx=0;ok=0;bad=0;combo=0;maxC=0;score=0;t0=null;helpOpen=false;
+  document.getElementById('levelScreen').style.display='none';
+  document.getElementById('statsBar').style.display='flex';
+  document.getElementById('textBox').style.display='block';
+  document.getElementById('btns').style.display='flex';
+  document.getElementById('helpPanel').classList.remove('show');
+  document.getElementById('statsScreen').style.display='none';
+  renderText(); updateStats();
+}
+
+function renderText(){
+  const box=document.getElementById('textBox'); box.innerHTML='';
+  for(let i=0;i<text.length;i++){
+    const s=document.createElement('span');
+    s.className='ch '+(i<idx?(i===idx-1&&bad>0?'bad':'ok'):(i===idx?'cur':'wt'));
+    s.textContent=text[i];
+    s.id='c'+i;
+    box.appendChild(s);
+  }
+  if(lvl&&lvl.mode==='teach'&&idx<text.length){clearHL();hlKey(text[idx].toLowerCase(),'hit');}
+  else clearHL();
+  const cur=document.getElementById('c'+idx);
+  if(cur)cur.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+// ═══════════════════════════════════════════
+// KEY PRESS
+// ═══════════════════════════════════════════
+function pressKey(k){
+  if(mode==='pinyin'){return pressPinyin(k);}
+  if(!lvl||idx>=text.length)return;
+  if(!t0)t0=Date.now();
+  const exp=text[idx];
+  const match=(k===exp)||(k.toLowerCase()===exp.toLowerCase());
+  if(match){
+    ok++;combo++;if(combo>maxC)maxC=combo;score+=10+Math.floor(combo/5)*5;
+    recordCorrect(exp);
+    playCorrect();vibrate(20);
+    if(lvl.mode==='teach')hlKey(exp.toLowerCase(),'ok-k');
+    idx++;
+    if(idx>=text.length)roundDone(); else renderText();
+  } else {
+    bad++;combo=0;
+    recordError(exp);
+    playWrong();vibrate(60);
+    if(lvl.mode==='teach')hlKey(exp.toLowerCase(),'bad-k');
+    const el=document.getElementById('c'+idx);
+    if(el){el.classList.add('bad');setTimeout(()=>{if(idx<text.length)renderText();},250);}
+  }
+  updateStats();
+}
+
+document.addEventListener('keydown',e=>{
+  if(document.getElementById('teachOv').classList.contains('show'))return;
+  if(e.key==='Tab'){e.preventDefault();return;}
+  if(e.key==='Backspace'){e.preventDefault();if(idx>0){idx--;renderText();updateStats();}return;}
+  if(e.key.length===1){e.preventDefault();pressKey(e.key);}
+});
+document.addEventListener('keyup',()=>clearHL());
+
+function updateStats(){
+  const m=t0?(Date.now()-t0)/1000/60:0;
+  document.getElementById('sv').textContent=m>0?Math.round(idx/5/m):0;
+  document.getElementById('av').textContent=idx>0?Math.round(ok/(ok+bad)*100)+'%':'100%';
+  document.getElementById('cv').textContent=combo;
+  document.getElementById('scv').textContent=score;
+}
+
+function roundDone(){
+  if(lvl.id>=0)completed[lvl.id]=1;
+  localStorage.setItem('tp-c',JSON.stringify(completed));
+  const sec=t0?(Date.now()-t0)/1000:0;
+  const wpm=Math.round(ok/5/(sec/60));
+  const acc=Math.round(ok/(ok+bad)*100);
+  saveHistory(wpm,acc,score);
+  playDone();vibrate(100);
+  document.getElementById('textBox').innerHTML=`
+    <div class="done"><div class="emoji">🎉</div><h2>完成！</h2>
+    <p>速度: <b style="color:var(--accent)">${wpm}</b> 字/分钟<br>
+    正确率: <b style="color:var(--green)">${acc}%</b><br>
+    得分: <b style="color:var(--yellow)">${score}</b> | 最大连击: ${maxC}<br>
+    用时: ${Math.round(sec)}秒</p></div>`;
+  clearHL();
+}
+
+// ═══════════════════════════════════════════
+// HELP
+// ═══════════════════════════════════════════
+function doHelp(){
+  if(idx>=text.length)return;
+  helpOpen=!helpOpen;
+  const panel=document.getElementById('helpPanel');
+  if(helpOpen){
+    const ch=text[idx];
+    const finger=KF[ch.toLowerCase()]||KF[ch]||'未知';
+    const color=FC[finger]||'#888';
+    const name=ch===' '?'空格':ch;
+    panel.querySelector('#helpHint').innerHTML=`当前要打: <b style="font-size:18px;color:var(--accent)">${name}</b><br>用 <b style="color:${color}">${finger}</b> 来按<br>💡 手指回到基准键位再出发`;
+    panel.classList.add('show');
+    if(ch!==' '){document.querySelectorAll('.k').forEach(el=>{el.classList.remove('hint-k');if(el.dataset.k===ch.toLowerCase())el.classList.add('hint-k');});}
+  } else {panel.classList.remove('show');document.querySelectorAll('.k').forEach(el=>el.classList.remove('hint-k'));}
+}
+
+// ═══════════════════════════════════════════
+// PINYIN MODE
+// ═══════════════════════════════════════════
+const PY_GEN={200:()=>shuffle(PY_DATA.filter(d=>d.ch.length===1)).slice(0,15),201:()=>shuffle(PY_DATA.filter(d=>d.ch.length>=2)).slice(0,12),202:()=>shuffle(PY_DATA).slice(0,15)};
+
+function startPinyin(id){
+  lvl={id,mode:'pinyin'};
+  pyList=PY_GEN[id](); pyIdx=0; pyCorrect=0; pyWrong=0; t0=null; helpOpen=false;
+  document.getElementById('levelScreen').style.display='none';
+  document.getElementById('statsBar').style.display='flex';
+  document.getElementById('textBox').style.display='block';
+  document.getElementById('btns').style.display='flex';
+  document.getElementById('helpPanel').classList.remove('show');
+  document.getElementById('statsScreen').style.display='none';
+  renderPinyin(); updatePyStats();
+}
+
+function renderPinyin(){
+  if(pyIdx>=pyList.length){pyDone();return;}
+  const item=pyList[pyIdx];
+  pyChar=item.ch; pyTarget=item.py.replace(/\s/g,''); // remove spaces for matching
+  pyTyped='';
+  const box=document.getElementById('textBox');
+  let h=`<div class="py-char">${item.ch}</div>`;
+  h+=`<div class="py-pinyin">第 ${pyIdx+1}/${pyList.length} 题</div>`;
+  h+=`<div class="py-input">`;
+  for(let i=0;i<pyTarget.length;i++){
+    h+=`<div class="py-letter${i===0?' current':''}" id="pl${i}"></div>`;
+  }
+  h+=`</div>`;
+  box.innerHTML=h;
+  clearHL();
+  // Highlight first key of pinyin
+  const firstKey=pyTarget[0];
+  if(firstKey) hlKey(firstKey,'hit');
+}
+
+function pressPinyin(k){
+  if(pyIdx>=pyList.length)return;
+  if(!t0)t0=Date.now();
+  const expected=pyTarget[pyTyped.length];
+  if(!expected)return;
+
+  if(k.toLowerCase()===expected.toLowerCase()){
+    pyTyped+=expected;
+    pyCorrect++;
+    recordCorrect(expected);
+    playCorrect();vibrate(20);
+    // Update UI
+    for(let i=0;i<pyTarget.length;i++){
+      const el=document.getElementById('pl'+i);
+      if(!el)continue;
+      el.className='py-letter';
+      if(i<pyTyped.length) el.classList.add('correct');
+      else if(i===pyTyped.length) el.classList.add('current');
+    }
+    clearHL();
+    if(pyTyped.length>=pyTarget.length){
+      // Done this char
+      setTimeout(()=>{pyIdx++;renderPinyin();},300);
+    } else {
+      const next=pyTarget[pyTyped.length];
+      if(next) hlKey(next,'hit');
+    }
+  } else {
+    pyWrong++;
+    recordError(expected);
+    playWrong();vibrate(60);
+    const el=document.getElementById('pl'+pyTyped.length);
+    if(el){el.classList.add('wrong');setTimeout(()=>el.classList.remove('wrong'),300);}
+  }
+  updatePyStats();
+}
+
+function updatePyStats(){
+  const total=pyCorrect+pyWrong;
+  const m=t0?(Date.now()-t0)/1000/60:0;
+  document.getElementById('sv').textContent=m>0?Math.round(pyCorrect/m):0;
+  document.getElementById('av').textContent=total>0?Math.round(pyCorrect/total*100)+'%':'100%';
+  document.getElementById('cv').textContent=pyIdx;
+  document.getElementById('scv').textContent=pyCorrect*10;
+}
+
+function pyDone(){
+  completed[lvl.id]=1;
+  localStorage.setItem('tp-c',JSON.stringify(completed));
+  const sec=t0?(Date.now()-t0)/1000:0;
+  const total=pyCorrect+pyWrong;
+  const acc=total>0?Math.round(pyCorrect/total*100):100;
+  const wpm=Math.round(pyCorrect/(sec/60));
+  saveHistory(wpm,acc,pyCorrect*10);
+  playDone();vibrate(100);
+  document.getElementById('textBox').innerHTML=`
+    <div class="done"><div class="emoji">🎉</div><h2>拼音练习完成！</h2>
+    <p>速度: <b style="color:var(--accent)">${wpm}</b> 字/分钟<br>
+    正确率: <b style="color:var(--green)">${acc}%</b><br>
+    得分: <b style="color:var(--yellow)">${pyCorrect*10}</b><br>
+    用时: ${Math.round(sec)}秒</p></div>`;
+}
+
+// ═══════════════════════════════════════════
+// STATS SCREEN
+// ═══════════════════════════════════════════
+function drawChart(){
+  const canvas=document.getElementById('chartCanvas');
+  const ctx=canvas.getContext('2d');
+  canvas.width=canvas.offsetWidth*2; canvas.height=240;
+  ctx.scale(2,2);
+  const w=canvas.offsetWidth, h=120;
+  ctx.clearRect(0,0,w,h);
+
+  // Use last 20 entries
+  const data=history.slice(-20);
+  if(data.length<2){
+    ctx.fillStyle='#555570'; ctx.font='13px sans-serif'; ctx.textAlign='center';
+    ctx.fillText('数据不足，多练习几次就能看到进步曲线！',w/2,h/2);
+    return;
+  }
+
+  const maxWpm=Math.max(...data.map(d=>d.wpm),10);
+  const pad={t:10,b:20,l:30,r:10};
+  const cw=w-pad.l-pad.r, ch=h-pad.t-pad.b;
+
+  // Grid
+  ctx.strokeStyle='#222'; ctx.lineWidth=0.5;
+  for(let i=0;i<=4;i++){
+    const y=pad.t+ch*(1-i/4);
+    ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(w-pad.r,y);ctx.stroke();
+    ctx.fillStyle='#555570';ctx.font='9px sans-serif';ctx.textAlign='right';
+    ctx.fillText(Math.round(maxWpm*i/4),pad.l-4,y+3);
+  }
+
+  // WPM line
+  ctx.strokeStyle='#6c63ff'; ctx.lineWidth=2; ctx.lineJoin='round'; ctx.beginPath();
+  data.forEach((d,i)=>{
+    const x=pad.l+cw*i/(data.length-1);
+    const y=pad.t+ch*(1-d.wpm/maxWpm);
+    i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+  });
+  ctx.stroke();
+
+  // Dots
+  data.forEach((d,i)=>{
+    const x=pad.l+cw*i/(data.length-1);
+    const y=pad.t+ch*(1-d.wpm/maxWpm);
+    ctx.fillStyle='#6c63ff';ctx.beginPath();ctx.arc(x,y,3,0,Math.PI*2);ctx.fill();
+  });
+
+  // Label
+  ctx.fillStyle='#555570';ctx.font='9px sans-serif';ctx.textAlign='center';
+  ctx.fillText('← 速度(字/分钟) →',w/2,h-2);
+}
+
+function drawHeatmap(){
+  const grid=document.getElementById('hmGrid'); grid.innerHTML='';
+  const keys='qwertyuiopasdfghjklzxcvbnm'.split('');
+  keys.forEach(k=>{
+    const d=document.createElement('div'); d.className='hm-key';
+    const e=keyErrors[k];
+    const rate=e&&e.total>0?e.wrong/e.total:0;
+    const pct=Math.round(rate*100);
+    // Color: green (0%) -> yellow (20%) -> red (50%+)
+    const r=Math.min(255,Math.round(rate*510));
+    const g=Math.min(255,Math.round((1-rate)*400));
+    d.style.background=`rgba(${r},${g},60,0.7)`;
+    d.innerHTML=`${k.toUpperCase()}<span class="hm-rate">${e?e.total:0}</span>`;
+    d.title=`${k}: 错误率${pct}% (${e?e.wrong:0}/${e?e.total:0})`;
+    grid.appendChild(d);
+  });
+}
+
+// ═══════════════════════════════════════════
+// TEACH OVERLAY
+// ═══════════════════════════════════════════
+function showTeachOv(title,desc,txt,fingers){
+  document.getElementById('teachTitle').textContent='📖 '+title;
+  document.getElementById('teachDesc').textContent=desc;
+  const chars=[...new Set(txt.replace(/ /g,''))].slice(0,10);
+  document.getElementById('teachChars').textContent=chars.join(' ');
+  let fi='';
+  if(fingers&&Object.keys(fingers).length>0){
+    fi=Object.entries(fingers).map(([k,v])=>`<span style="color:${FC[v]||'#888'};font-weight:700">${k}→${v}</span>`).join('　');
+  } else fi='运用已学的所有键位';
+  document.getElementById('teachFinger').innerHTML=fi;
+  document.getElementById('teachOv').classList.add('show');
+}
+function closeTeach(){document.getElementById('teachOv').classList.remove('show');}
+
+function resetLv(){
+  if(!lvl)return;
+  if(lvl.mode==='teach')startTeach(lvl.id);
+  else if(lvl.mode==='challenge')startChallenge(lvl.id);
+  else if(lvl.mode==='pinyin')startPinyin(lvl.id);
+}
+
+// ═══════════════════════════════════════════
+// TAB SWITCH
+// ═══════════════════════════════════════════
+function switchTab(m,el){
+  mode=m;
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
+  el.classList.add('on');
+  lvl=null;
+  showLevels();
+}
+
+// ═══════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════
+buildKB(); showLevels();
+document.addEventListener('touchstart',e=>{if(e.touches.length>1)e.preventDefault();},{passive:false});
+</script>
+</body>
+</html>
